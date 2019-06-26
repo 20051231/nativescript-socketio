@@ -232,7 +232,7 @@ export function serialize(data: any): any {
     return new org.json.JSONObject(JSON.stringify(data))
 }
 
-export function deserialize(data): any {
+export function deserialize(dict): any {
     if (!dict) {
         return null;
     }
