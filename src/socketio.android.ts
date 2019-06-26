@@ -226,81 +226,24 @@ export class SocketIO extends Common {
 }
 
 export function serialize(data: any): any {
-    let store;
-    switch (typeof data) {
-        case 'string':
-        case 'boolean':
-        case 'number': {
-            return data;
-        }
-
-        case 'object': {
-            if (!data) {
-                return null;
-            }
-
-            if (data instanceof Date) {
-                return data.toJSON();
-            }
-            if (Array.isArray(data)) {
-                store = new org.json.JSONArray();
-                data.forEach((item) => store.put(serialize(item)));
-                return store;
-            }
-            store = new org.json.JSONObject();
-            Object.keys(data).forEach((key) => store.put(key, serialize(data[key])));
-            return store;
-        }
-
-        default:
-            return null;
-    }
-
+    if (data === null || data === undefined) return org.json.JSONObject.NULL
+    if (typeof data !== 'object') return data;
+    if (Array.isArray(data)) return new org.json.JSONArray(JSON.stringify(data))
+    return new org.json.JSONObject(JSON.stringify(data))
 }
 
 export function deserialize(data): any {
-    if (data === null || typeof data !== 'object') {
-        return data;
+    if (!dict) {
+        return null;
     }
-    let store;
-    switch (data.getClass().getName()) {
-        case 'java.lang.String': {
-            return String(data);
-        }
-
-        case 'java.lang.Boolean': {
-            return String(data) === 'true';
-        }
-
-        case 'java.lang.Integer':
-        case 'java.lang.Long':
-        case 'java.lang.Double':
-        case 'java.lang.Short': {
-            return Number(data);
-        }
-
-        case 'org.json.JSONArray': {
-            store = [];
-            for (let j = 0; j < data.length(); j++) {
-                store[j] = deserialize(data.get(j));
-            }
-            break;
-        }
-
-        case 'org.json.JSONObject': {
-            store = {};
-            let i = data.keys();
-            while (i.hasNext()) {
-                let key = i.next();
-                store[key] = deserialize(data.get(key));
-            }
-            break;
-        }
-
-        default:
-            store = null;
+    switch (typeof dict) {
+        case 'string':
+        case 'number':
+        case 'boolean':
+        return dict;
     }
-    return store;
+    const ns = dict.toString();
+    return JSON.parse(ns.toString());
 }
 
 export function connect(uri: string, options?: any): SocketIO {
