@@ -266,62 +266,36 @@ export class SocketIO extends Common {
 }
 
 export function serialize(data: any): any {
-    switch (typeof data) {
-        case 'string':
-        case 'boolean':
-        case 'number': {
-            return data;
-        }
+    if (data === null || data === undefined) return NSNull.alloc();
+    if (typeof data !== 'object') return data;
+    //if (Array.isArray(data)) return NSArray.arrayWithArray(data);
+    //return NSDictionary.dictionaryWithDictionary(data);
 
-        case 'object': {
-            if (data instanceof Date) {
-                return data.toJSON();
-            }
+    const json = JSON.stringify(data);
+    const buf = new NSString({ string: json }).dataUsingEncoding(NSUTF8StringEncoding)
 
-            if (!data) {
-                return NSNull.new();
-            }
-
-            if (Array.isArray(data)) {
-                return NSArray.arrayWithArray((<any>data).map(serialize));
-            }
-
-            let node = {} as any;
-            Object.keys(data).forEach(function (key) {
-                let value = data[key];
-                node[key] = serialize(value);
-            });
-            return NSDictionary.dictionaryWithDictionary(node);
-        }
-
-        default:
-            return NSNull.new();
-    }
+    // const buf = new Buffer(JSON.stringify(data));
+    const dict = NSJSONSerialization.JSONObjectWithDataOptionsError(
+        buf,
+        null
+    );
+    
+    return dict;
 }
 
-export function deserialize(data): any {
-    if (data instanceof NSNull) {
+export function deserialize(dict): any {
+    if (dict instanceof NSNull) {
         return null;
     }
-
-    if (data instanceof NSArray) {
-        let array = [];
-        for (let i = 0, n = data.count; i < n; i++) {
-            array[i] = deserialize(data.objectAtIndex(i));
-        }
-        return array;
-    }
-
-    if (data instanceof NSDictionary) {
-        let dict = {};
-        for (let i = 0, n = data.allKeys.count; i < n; i++) {
-            let key = data.allKeys.objectAtIndex(i);
-            dict[key] = deserialize(data.objectForKey(key));
-        }
-        return dict;
-    }
-
-    return data;
+    const data = NSJSONSerialization.dataWithJSONObjectOptionsError(
+        dict,
+        null
+    );
+    const ns = NSString.alloc().initWithDataEncoding(
+        data,
+        NSUTF8StringEncoding
+    );
+    return JSON.parse(ns.toString());
 }
 
 
